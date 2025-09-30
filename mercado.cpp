@@ -1,9 +1,11 @@
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <ctime>
 
 using namespace std;
 
@@ -70,10 +72,13 @@ vector<Produto> lerProdutos(const string& nomeArquivo = ARQUIVO) {
         if (!getline(ss, p.nome, ',')) continue;
         if (!getline(ss, quantidadeStr, ',')) continue;
         if (!getline(ss, valorStr, ',')) continue;
-      
-        p.quantidade = stoi(quantidadeStr);
-        p.valor = stod(valorStr);
-      
+       try {
+            p.quantidade = stoi(quantidadeStr);
+            p.valor = stod(valorStr);
+        } catch (...) {
+            cout << "Erro ao converter quantidade/valor do produto: \"" << p.nome << "\"" << endl;
+            continue;
+        }
         produtos.push_back(p);
     }
 
@@ -122,9 +127,7 @@ void cadastrarProduto(vector<Produto> &p) {
       return;
 
     p.push_back(pdt);
-    if(!atualizarArquivo(p))  {
-      cout << "\n Obs.: As alterações não serão salvas quando você sair";
-    }
+  
   }
 
   for (size_t i = 0; i < p.size(); i++) {
@@ -135,6 +138,9 @@ void cadastrarProduto(vector<Produto> &p) {
         p.erase(p.begin() + j);
       }
     }
+  }  
+  if(!atualizarArquivo(p))  {
+      cout << "\n Obs.: As alterações não serão salvas quando você sair";
   }
 }
 
@@ -194,6 +200,21 @@ void venderProdutos(vector<Produto> &p, vector<Produto> &pComprados,t_valor &pre
   }
 }
 
+
+string somaMes(int meses){ // https://www.w3schools.com/cpp/cpp_date.asp https://www.w3schools.com/cpp/cpp_ref_ctime.asp
+  time_t hoje;
+  struct tm datetime;
+  char r[50];
+
+  hoje = time(NULL);
+  datetime = *localtime(&hoje);
+  datetime.tm_mon += meses;
+  mktime(&datetime); // https://www.w3schools.com/cpp/ref_ctime_mktime.asp
+
+  strftime(r, 50, "%d/%m/%y", &datetime);   
+return r;
+}
+
 void pagarProdutos(vector<Produto> pComprados, float custo) {
   if (pComprados.empty()) {
     cout << endl << "Sem produtos seleciondos." << endl;
@@ -206,22 +227,26 @@ void pagarProdutos(vector<Produto> pComprados, float custo) {
     }
     cout << endl << "Estimativa da compra: R$ " << custo << endl;
 
-    int forma_pagamento = campoNumero<int>("Escolha a forma de pagamento:\n[1] - A vista (5% de desconto)\n[2] - Parcelado (até 3x sem juros, até 12x com 10% de juros)\n[0] Cancelar\n---> ",0,2);
+    int forma_pagamento = campoNumero<int>("\nEscolha a forma de pagamento:\n[1] - A vista (5% de desconto)\n[2] - Parcelado (até 3x sem juros, até 12x com 10% de juros)\n[0] - Cancelar Operação\n---> ",0,2);
+    
     if (forma_pagamento == 0) {
       return;
-    } 
+    }
+    // if (forma_pagamento == 3) { ainda vou fazer a logica de devolucao dos itens.
+    //   pComprados.clear();
+    // }
     int vezes = 1;
     float final = custo;
     if (forma_pagamento == 2 || forma_pagamento == 3) {
-      vezes = campoNumero<int>("Escolha o nº de vezes:\n[0] Cancelar\n---> ", 0,12);
+      vezes = campoNumero<int>("Escolha o nº de vezes:\n[0] Cancelar Operação\n---> ", 0,12);
       if (vezes == 0) return;
       if (vezes > 3) final += final * 0.1;
     }
     if (vezes == 1) {
       final -= final * 0.05;
     }
-
- cout << "\n\t===================\n";
+    
+    cout << "\n\t===================\n";
     for (int i = 0; i < pComprados.size(); i++) {
       cout << "\t(" << pComprados[i].quantidade << "x) " << pComprados[i].nome << ":\t" << pComprados[i].valor<< endl;
     } 
@@ -235,9 +260,15 @@ void pagarProdutos(vector<Produto> pComprados, float custo) {
      cout << "\t Juros aplicado: 10%\n";  
    
     for (int i = 1; i <= vezes; i++) {
-      cout <<"\t"<<i << ": " << "R$ " << final / vezes << endl; //colocar a data
+      cout <<"\t"<<somaMes(i + 1) << ": " << "R$ " << final / vezes << endl;
     }
-    cout << "\n\t=== Valor total ===\n" << "\tR$ " << final << "\n\t===================\n";
+    cout << "\n\t=== Valor total ===\n" << "\tR$ " << final << endl;
+
+    int escolha = campoNumero<int>("[1] - Prosseguir\n[0] - Cancelar Operação\n---> ",0,1);
+    if (escolha == 0) {
+      return;
+    }
+    pComprados.clear();
   }
 }
 
@@ -246,7 +277,6 @@ int main() {
 
   vector<Produto> produtos = lerProdutos(ARQUIVO);
   vector<Produto> produtosComprados;
-  
   
   int opcao;
   t_valor valor;
@@ -265,7 +295,6 @@ int main() {
     switch (opcao) {
     case 1:
       cadastrarProduto(produtos);
-      ;
       break;
 
     case 2:
