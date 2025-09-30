@@ -7,6 +7,8 @@
 
 using namespace std;
 
+#define ARQUIVO "produtos.txt"
+
 template <typename I>
 I campoNumero(const string &prompt, I min = numeric_limits<I>::lowest(), I max = numeric_limits<I>::max(), const string &msg_erro = "Entrada inválida. Por favor, tente novamente. \n") {
   I valor;
@@ -49,7 +51,7 @@ struct Produto {
   t_valor valor;
 };
 
-vector<Produto> lerProdutos(const string& nomeArquivo) {
+vector<Produto> lerProdutos(const string& nomeArquivo = ARQUIVO) {
     vector<Produto> produtos;
     ifstream arquivo(nomeArquivo);
     if (!arquivo.is_open()) {
@@ -68,7 +70,7 @@ vector<Produto> lerProdutos(const string& nomeArquivo) {
         if (!getline(ss, p.nome, ',')) continue;
         if (!getline(ss, quantidadeStr, ',')) continue;
         if (!getline(ss, valorStr, ',')) continue;
-
+      
         p.quantidade = stoi(quantidadeStr);
         p.valor = stod(valorStr);
       
@@ -77,6 +79,23 @@ vector<Produto> lerProdutos(const string& nomeArquivo) {
 
     arquivo.close();
     return produtos;
+}
+bool atualizarArquivo( const vector<Produto> &p, const string& nomeArquivo = ARQUIVO) {
+    ofstream arquivo(nomeArquivo, ios::trunc);
+
+    if (!arquivo.is_open()) {
+        cout << "Não foi possível abrir o arquivo " << nomeArquivo << endl;
+        return false;
+    }
+
+    for (const auto& prod : p) {
+        arquivo << prod.nome << ","
+                << prod.quantidade << ","
+                << prod.valor << "\n";
+    }
+
+    arquivo.close();
+    return true;
 }
 
 void cadastrarProduto(vector<Produto> &p) {
@@ -103,6 +122,9 @@ void cadastrarProduto(vector<Produto> &p) {
       return;
 
     p.push_back(pdt);
+    if(!atualizarArquivo(p))  {
+      cout << "\n Obs.: As alterações não serão salvas quando você sair";
+    }
   }
 
   for (size_t i = 0; i < p.size(); i++) {
@@ -166,6 +188,9 @@ void venderProdutos(vector<Produto> &p, vector<Produto> &pComprados,t_valor &pre
       }
     } while (continuar == 1);
     cout << "\nA soma dos itens é de R$ " << preco;
+    if(!atualizarArquivo(p))  {
+      cout << "\n Obs.: As alterações não serão salvas quando você sair";
+    }
   }
 }
 
@@ -210,7 +235,7 @@ void pagarProdutos(vector<Produto> pComprados, float custo) {
      cout << "\t Juros aplicado: 10%\n";  
    
     for (int i = 1; i <= vezes; i++) {
-      cout <<"\t"<<i << ": " << "R$ " << final / vezes << endl;
+      cout <<"\t"<<i << ": " << "R$ " << final / vezes << endl; //colocar a data
     }
     cout << "\n\t=== Valor total ===\n" << "\tR$ " << final << "\n\t===================\n";
   }
@@ -219,8 +244,8 @@ void pagarProdutos(vector<Produto> pComprados, float custo) {
 int main() {
   system("chcp 65001");
 
-  vector<Produto> produtos; // trocar
-  vector<Produto> produtosComprados; //trocar
+  vector<Produto> produtos = lerProdutos(ARQUIVO);
+  vector<Produto> produtosComprados;
   
   
   int opcao;
