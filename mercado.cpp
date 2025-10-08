@@ -1,318 +1,348 @@
-#include <cstddef>
+#include <cstddef> //Utilizada para o size_t e para apelidar tipos
 #include <fstream>
 #include <iostream>
-#include <limits>
-#include <sstream>
+#include <limits> //Utilizada para obter limites de tipos numéricos
+#include <sstream> //Utilizada para facilitar a conversão de string para outros tipos e separar uma string (stringstream)
 #include <string>
-#include <vector>
-#include <ctime>
+#include <vector> //Utilizda para utilizar vetores e para alocação de forma simples
+#include <ctime> //Utilizada para a manipulação de data e hora
 
-using namespace std;
+using namespace std; //Descarta o uso de "std", melhorando a legibilidade do código e a produtividade do desenvolvedor
 
-#define ARQUIVO "produtos.txt"
+#define ARQUIVO "produtos.txt" //Constante para o nome do arquivo
 
-template <typename I>
-I campoNumero(const string &prompt, I min = numeric_limits<I>::lowest(), I max = numeric_limits<I>::max(), const string &msg_erro = "Entrada inválida. Por favor, tente novamente. \n") {
-  I valor;
-  string entrada;
-  while (true) {
-    cout << prompt;
-    getline(cin, entrada);
-    stringstream ss(entrada);
+template < typename I > //Genérica: Lê qualquer tipo numérico
+    I campoNumero(const string & prompt, I min = numeric_limits < I > ::lowest(), I max = numeric_limits < I > ::max(),
+        const string & msg_erro = "Entrada inválida. Por favor, tente novamente. \n") { //Parâmetros (passados quando a função é chamada)
+        I valor;
+        string entrada;
+        while (true) { //Pede a entrada até que seja válida
+            cout << prompt;
+            getline(cin, entrada); //Evita problemas com espaços, lendo a linha inteira
+            stringstream ss(entrada);
 
-    if (!(ss >> valor) || !(ss.eof()) || valor < min || valor > max) {
-      cout << msg_erro;
-      continue;
-    }
-    return valor;
-  }
-}
-
-string campoTexto(const string &prompt, const string &msg_erro = "Entrada inválida. Por favor, tente novamente. \n") {
-  string entrada;
-
-  while (true) {
-    cout << prompt;
-    getline(cin, entrada);
-
-    if (entrada.empty()) {
-      cout << msg_erro;
-      continue;
+            if (!(ss >> valor) || !(ss.eof()) || valor < min || valor > max) { //Verifica se a entrada é um número, convertendo para o tipo especificado; verifica se há algo que não é um número e verifica se o valor está no intervalo permitido, tudo isso respectivamente
+                cout << msg_erro;
+                continue; //Se a validação falhar, envia a mensagem de erro definida e o loop continua
+            }
+            return valor; //Se a validação for bem sucedida, retorna o respectivo valor
+        }
     }
 
-    return entrada;
-  }
+string campoTexto(const string & prompt,
+    const string & msg_erro = "Entrada inválida. Por favor, tente novamente. \n") { //Parâmetros (passados quando a função é chamada)
+    string entrada;
+
+    while (true) { //Pede a entrada até que seja válida
+        cout << prompt;
+        getline(cin, entrada);
+
+        if (entrada.empty()) {
+            cout << msg_erro;
+            continue; //Se a validação falhar, envia a mensagem de erro definida e o loop continua
+        }
+        return entrada; //Se a validação for bem sucedida, retorna o respectivo valor
+    }
 }
 
-
-typedef int t_quantidade;
-typedef double t_valor;
+typedef int t_quantidade; //Adicionado para a semântica do código - Indica que o tipo "int" serve para quantidade
+typedef double t_valor; //Adicionado para a semântica do código - Indica que o tipo "double" serve para valor
 struct Produto {
-  string nome;
-  t_quantidade quantidade;
-  t_valor valor;
+    string nome;
+    t_quantidade quantidade;
+    t_valor valor;
 };
 
-vector<Produto> lerProdutos(const string& nomeArquivo = ARQUIVO) {
-    vector<Produto> produtos;
+vector <Produto> lerProdutos(const string & nomeArquivo = ARQUIVO) { //Os motivos do "const (tipo) &(variável)" em algumas funções é o seguinte: "const" juntamente do "&" faz com que a função receba o endereço de memória da variável, economizando processamento, além de impedir que a variável seja modificada
+    vector <Produto> produtos;
     ifstream arquivo(nomeArquivo);
     if (!arquivo.is_open()) {
         cout << "Não foi possível abrir o arquivo " << nomeArquivo << endl;
-        return produtos;
+        return produtos; //Retorna o vetor vazio;
     }
 
     string linha;
     while (getline(arquivo, linha)) {
-        if (linha.empty()) continue;
+        if (linha.empty()) continue; //Avança para a próxima linha caso a linha lida estiver vazia
 
-        stringstream ss(linha);
-        Produto p;
+        stringstream ss(linha); //Separa as partes da linha (string)
+        Produto p; //Receberá valores e seus valores serão atribuídos ao vetor "produtos" a cada iteração, alimentando o vetor;
         string quantidadeStr, valorStr;
 
-        if (!getline(ss, p.nome, ',')) continue;
-        if (!getline(ss, quantidadeStr, ',')) continue;
-        if (!getline(ss, valorStr, ',')) continue;
-       try {
-            p.quantidade = stoi(quantidadeStr);
-            p.valor = stod(valorStr);
-        } catch (...) {
+        if (!getline(ss, p.nome, ',')) continue; //Avança para a próxima linha caso não receba o valor esperado
+        if (!getline(ss, quantidadeStr, ',')) continue; //Avança para a próxima linha caso não receba o valor esperado
+        if (!getline(ss, valorStr, ',')) continue; //Avança para a próxima linha caso não receba o valor esperado
+        try { //Tenta executar as operações abaixo, o que é relativamente perigoso
+            p.quantidade = stoi(quantidadeStr); //Converte "quantidadeStr" para "int" e armazena em "p.quantidade"
+            p.valor = stod(valorStr); //Converte "valorStr" para "double" e armazena em "p.valor"
+        } catch (...) { //Caso alguma das execuções acima falhe, exibe a mensagem abaixo ao invés de carshar e pula para a próxima linha
             cout << "Erro ao converter quantidade/valor do produto: \"" << p.nome << "\"" << endl;
             continue;
         }
-        produtos.push_back(p);
+        produtos.push_back(p); //Aloca "p" em "produtos"
     }
-
     arquivo.close();
-    return produtos;
+    return produtos; //Retorna o vetor de produtos
 }
-bool atualizarArquivo( const vector<Produto> &p, const string& nomeArquivo = ARQUIVO) {
-    ofstream arquivo(nomeArquivo, ios::trunc);
+
+bool atualizarArquivo(const vector <Produto> & p,
+    const string & nomeArquivo = ARQUIVO) {
+    ofstream arquivo(nomeArquivo, ios::trunc); //"trunc" apaga completamente o arquivo, caso já exista, gerando uma cópia exata do vetor "p", de maneira que,"" sempre que a função seja chamada, o arquivo seja atualizado
 
     if (!arquivo.is_open()) {
         cout << "Não foi possível abrir o arquivo " << nomeArquivo << endl;
         return false;
     }
 
-    for (const auto& prod : p) {
-        arquivo << prod.nome << ","
-                << prod.quantidade << ","
-                << prod.valor << "\n";
+    for (const auto & prod: p) {
+        arquivo << prod.nome << ", " <<
+            prod.quantidade << ", " <<
+            prod.valor << "\n";
     }
-
     arquivo.close();
-    return true;
+    return true; //Indica que o loop terminou e tudo foi salvo corretamente no arquivo
 }
 
-void cadastrarProduto(vector<Produto> &p) {
-  int quantidade_cadastrar;
+void cadastrarProduto(vector <Produto> & p) {
+    int quantidade_cadastrar;
 
-  quantidade_cadastrar = campoNumero<int>(
-      "\nQuantos itens você deseja cadastrar?\n[0] - cancelar\n---> ", 0, 50);
+    quantidade_cadastrar = campoNumero < int > ("\nQuantos itens você deseja cadastrar?\n[0] - Cancelar\n---> ", 0, 50);
 
-  if (quantidade_cadastrar == 0)
-    return;
+    if (quantidade_cadastrar == 0)
+        return; //Cancela a operação
 
-  for (int i = 0; i < quantidade_cadastrar; i++) {
-    Produto pdt;
-    pdt.nome = campoTexto("\nInsira o nome do produto:\n[0] - cancelar\n---> ");
-    if (pdt.nome == "0")
-      return;
+    for (int i = 0; i < quantidade_cadastrar; i++) {
+        Produto pdt;
+        pdt.nome = campoTexto("\nInsira o nome do produto:\n[0] - Cancelar\n---> ");
+        if (pdt.nome == "0")
+            return;
 
-    pdt.quantidade = campoNumero<int>("\nInsira a quantidade do produto '" + pdt.nome + "'\n[0] - cancelar\n---> ",0, 5000);
-    if (pdt.quantidade == 0)
-      return;
+        pdt.quantidade = campoNumero < int > ("\nInsira a quantidade do produto '" + pdt.nome + "'\n[0] - Cancelar\n---> ", 0, 5000);
+        if (pdt.quantidade == 0)
+            return;
 
-    pdt.valor = campoNumero<double>("\nInsira o valor do produto '" + pdt.nome + "'\n[0] - cancelar\n---> ", 0, 5000);
-    if (pdt.valor == 0)
-      return;
+        pdt.valor = campoNumero < double > ("\nInsira o valor do produto '" + pdt.nome + "'\n[0] - Cancelar\n---> ", 0, 5000);
+        if (pdt.valor == 0)
+            return;
 
-    p.push_back(pdt);
-  
-  }
+        p.push_back(pdt);
 
-  for (size_t i = 0; i < p.size(); i++) {
-    for (size_t j = i + 1; j < p.size(); j++) {
-      if (p[i].nome == p[j].nome) {
-        p[i].quantidade += p[j].quantidade;
-        p[i].valor = p[j].valor;
-        p.erase(p.begin() + j);
-      }
     }
-  }  
-  if(!atualizarArquivo(p))  {
-      cout << "\n Obs.: As alterações não serão salvas quando você sair";
-  }
-}
 
-void venderProdutos(vector<Produto> &p, vector<Produto> &pComprados,t_valor &preco) {
-  Produto pdtComprado;
-  int continuar = 1;
-  size_t escolha = 0;
-  t_quantidade quantidade = 0;
-
-  if (p.empty()) {
-    cout << endl << "Sem produtos cadastrados." << endl;
-  } else {
-    cout << endl;
-    do {
-      cout << "\t===== Produtos =====" << endl << endl;
-      vector<size_t> mapa;
-      size_t idx = 1;
-      for (size_t i = 0; i < p.size(); i++) {
-        if (p[i].quantidade > 0) {
-          cout << "[" << idx << "]: " << p[i].nome
-               << ";\tQuantidade: " << p[i].quantidade
-               << ";\tValor: " << p[i].valor << endl;
-          mapa.push_back(i);
-          idx++;
+    for (size_t i = 0; i < p.size(); i++) { //"size()" retorna sempre um número sem sinal, ou seja, não negativo: size_t, por isso ele é usado, para a compatibilidade
+        for (size_t j = i + 1; j < p.size(); j++) {
+            if (p[i].nome == p[j].nome) {
+                p[i].quantidade += p[j].quantidade; //Adiciona quantidade caso o produto seja o mesmo
+                p[i].valor = p[j].valor; //Atualiza o valor caso o profuto seja o mesmo
+                p.erase(p.begin() + j); //Apaga a cópia, permanecendo só o produto atualizado
+            }
         }
-      } 
-
-      escolha = campoNumero<size_t>("\nSelecione um produto:\n[0] cancelar\n---> ", 0, mapa.size(),"Produto inválido. Por favor, tente novamente. \n");
-      
-      if (escolha == 0) return;
-      
-      size_t indice = mapa[escolha - 1];
-
-      quantidade = campoNumero<t_quantidade>("\nQuanto do produto '" + p[indice].nome + "' você deseja comprar?\n[0] - cancelar\n---> ",0,p[indice].quantidade, "Quantidade inválida. Por favor, tente novamente. \n");
-      if (quantidade == 0) return;
-
-      t_valor precoTemp = p[indice].valor * quantidade;
-      cout << "Valor da compra: " << precoTemp;
-      continuar = campoNumero<int>("\nVocê deseja continuar comprando?\n[1] - Sim\n[2] - Não\n[3] - Cancelar operação\n---> ",0,3);
-
-      if (continuar != 3) {
-        pdtComprado.nome = p[indice].nome;
-        pdtComprado.quantidade = quantidade;
-        pdtComprado.valor = p[indice].valor * pdtComprado.quantidade;
-        pComprados.push_back(pdtComprado);
-        p[indice].quantidade -= quantidade;
-        preco += p[indice].valor * quantidade;
-      }
-      if (continuar == 3 && pComprados.empty()) {
-        preco = 0;
-      }
-    } while (continuar == 1);
-    cout << "\nA soma dos itens é de R$ " << preco;
-    if(!atualizarArquivo(p))  {
-      cout << "\n Obs.: As alterações não serão salvas quando você sair";
     }
-  }
+
+    if (!atualizarArquivo(p)) { //Tenta atualizar o arquivo
+        cout << "\n Obs.: As alterações não serão salvas quando você sair.\n";
+    }
 }
 
+void venderProdutos(vector <Produto> & p, vector <Produto> & pComprados, t_valor & preco) {
+    Produto pdtComprado;
+    int continuar = 1;
+    size_t escolha = 0;
+    t_quantidade quantidade = 0;
 
-string somaMes(int meses){ // https://www.w3schools.com/cpp/cpp_date.asp https://www.w3schools.com/cpp/cpp_ref_ctime.asp
-  time_t hoje;
-  struct tm datetime;
-  char r[50];
+    if (p.empty()) {
+        cout << endl << "Sem produtos cadastrados." << endl;
+    } else {
+        cout << endl;
+        do {
+            cout << "\t===== Produtos =====" << endl << endl;
+            vector <size_t> mapa; //Armazena os valores reais do índice, iniciando em 0
+            size_t idx = 1; //Índice amigável para a visualização do usuário
+            for (size_t i = 0; i < p.size(); i++) {
+                if (p[i].quantidade > 0) {
+                    cout << "[" << idx << "]: " << p[i].nome <<
+                        "; Quantidade: " << p[i].quantidade <<
+                        "; Valor: " << p[i].valor << endl;
+                    mapa.push_back(i); //Aloca o valor real do índice em "mapa"
+                    idx++;
+                }
+            }
 
-  hoje = time(NULL);
-  datetime = *localtime(&hoje);
-  datetime.tm_mon += meses;
-  mktime(&datetime); // https://www.w3schools.com/cpp/ref_ctime_mktime.asp
+            escolha = campoNumero < size_t > ("\nSelecione um produto:\n[0] Cancelar\n---> ", 0, mapa.size(), "Produto inválido. Por favor, tente novamente.\n");
 
-  strftime(r, 50, "%d/%m/%y", &datetime);   
-return r;
+            if (escolha == 0) return;
+
+            size_t indice = mapa[escolha - 1]; //Remove 1 do índice amigável, acessando o índice real
+
+            quantidade = campoNumero < t_quantidade > ("\nQuanto do produto '" + p[indice].nome + "' você deseja comprar?\n[0] - Cancelar\n---> ", 0, p[indice].quantidade, "Quantidade inválida. Por favor, tente novamente.\n");
+            if (quantidade == 0) return;
+
+            t_valor precoTemp = p[indice].valor * quantidade;
+            cout << "Valor da compra: " << precoTemp; //Exibe o valor da compra até o momento
+            continuar = campoNumero < int > ("\n\nVocê deseja continuar comprando?\n[1] - Sim\n[2] - Não\n[3] - Cancelar operação\n---> ", 0, 3);
+
+            if (continuar != 3) {
+                pdtComprado.nome = p[indice].nome; //Recebe o valor do produto selecionado
+                pdtComprado.quantidade = quantidade; //Recebe o valor do produto selecionado
+                pdtComprado.valor = p[indice].valor * pdtComprado.quantidade; //Efetua o cálculo do valor
+                pComprados.push_back(pdtComprado); //Aloca as informações no vetor passado por referência
+                p[indice].quantidade -= quantidade; //Atualiza a quantidade do produto
+                preco += p[indice].valor * quantidade; //Atualiza o valor da compra
+            }
+
+            if (continuar == 3 && pComprados.empty()) {
+                preco = 0;
+            }
+
+        } while (continuar == 1);
+        cout << "\nA soma dos itens é de R$: " << preco << endl;
+
+        if (!atualizarArquivo(p)) {
+            cout << "\nObs.: As alterações não serão salvas quando você sair\n";
+        }
+    }
 }
 
-void pagarProdutos(vector<Produto> pComprados, float custo) {
-  if (pComprados.empty()) {
-    cout << endl << "Sem produtos seleciondos." << endl;
-  } else {
-    cout << endl << "\t=== Produtos Selecionados ===" << endl << endl;
-    for (size_t i = 0; i < pComprados.size(); i++) {
-      cout << "Produto " << i + 1 << ": " << pComprados[i].nome
-           << "; Quantidade: " << pComprados[i].quantidade
-           << "; Valor: " << pComprados[i].valor << endl;
-    }
-    cout << endl << "Estimativa da compra: R$ " << custo << endl;
+string somaMes(int meses) { //https://www.w3schools.com/cpp/cpp_date.asp https://www.w3schools.com/cpp/cpp_ref_ctime.asp
+    time_t hoje; //Armazena o tempo atual do sistema
+    struct tm datetime; //Estrutura que armazena a data e hora em componentes separados (ano, mês, dia, hora)
+    char r[50]; //Armazena a data
 
-    int forma_pagamento = campoNumero<int>("\nEscolha a forma de pagamento:\n[1] - A vista (5% de desconto)\n[2] - Parcelado (até 3x sem juros, até 12x com 10% de juros)\n[0] - Cancelar Operação\n---> ",0,2);
-    
-    if (forma_pagamento == 0) {
-      return;
-    }
-    // if (forma_pagamento == 3) { ainda vou fazer a logica de devolucao dos itens.
-    //   pComprados.clear();
-    // }
-    int vezes = 1;
-    float final = custo;
-    if (forma_pagamento == 2 || forma_pagamento == 3) {
-      vezes = campoNumero<int>("Escolha o nº de vezes:\n[0] Cancelar Operação\n---> ", 0,12);
-      if (vezes == 0) return;
-      if (vezes > 3) final += final * 0.1;
-    }
-    if (vezes == 1) {
-      final -= final * 0.05;
-    }
-    
-    cout << "\n\t===================\n";
-    for (int i = 0; i < pComprados.size(); i++) {
-      cout << "\t(" << pComprados[i].quantidade << "x) " << pComprados[i].nome << ":\t" << pComprados[i].valor<< endl;
-    } 
-    cout << "\t = R$ " << custo << endl; 
+    hoje = time(NULL); //Armazena o tempo atual sem apontar para ninguém
+    datetime = * localtime( & hoje); //Recebe o tempo atual através de um ponteiro que aponta para "hoje"
+    datetime.tm_mon += meses; //Adiciona os meses ao mês atual, indo de 0 a 11
+    mktime( & datetime); //Ajusta o valor do mês caso ultrapasse o limite lógico | https://www.w3schools.com/cpp/ref_ctime_mktime.asp
 
-    cout << "\t=== Pagamentos ===\n";
-    if (vezes == 1) 
-       cout << "\t Desconto aplicado: 5%\n"; 
-    
-    if (vezes > 3) 
-     cout << "\t Juros aplicado: 10%\n";  
-   
-    for (int i = 1; i <= vezes; i++) {
-      cout <<"\t"<<somaMes(i + 1) << ": " << "R$ " << final / vezes << endl;
-    }
-    cout << "\n\t=== Valor total ===\n" << "\tR$ " << final << endl;
+    strftime(r, 50, "%d/%m/%y", & datetime); //Formata a data e a armazena em "r". Obs.: Essa função não reconhece strings
+    return r;
+}
 
-    int escolha = campoNumero<int>("[1] - Prosseguir\n[0] - Cancelar Operação\n---> ",0,1);
-    if (escolha == 0) {
-      return;
+void pagarProdutos(vector <Produto> pComprados, float custo, vector <Produto> & p) {
+    if (pComprados.empty()) {
+        cout << endl << "Sem produtos seleciondos." << endl;
+    } else {
+        cout << endl << "\t=== Produtos Selecionados ===" << endl << endl;
+        for (size_t i = 0; i < pComprados.size(); i++) {
+            cout << "Produto " << i + 1 << ": " << pComprados[i].nome <<
+                "; Quantidade: " << pComprados[i].quantidade <<
+                "; Valor: " << pComprados[i].valor << endl;
+        }
+        cout << endl << "Estimativa da compra: R$ " << custo << endl;
+
+        int forma_pagamento = campoNumero < int > ("\nEscolha a forma de pagamento:\n[1] - À vista (5% de desconto)\n[2] - Parcelado (até 3x sem juros, até 12x com 10% de juros)\n[3] - Cancelar e devolver itens\n[0] - Cancelar Operação\n---> ", 0, 3);
+
+        if (forma_pagamento == 0) {
+            return;
+        }
+        if (forma_pagamento == 3) { // cancelamento com devolução dos produtos que iriam ser comprados
+            for (size_t i = 0; i < pComprados.size(); ++i) { // devolve cada item ao estoque
+                p.push_back(pComprados[i]);
+            }
+            for (size_t i = 0; i < p.size(); ++i) {
+                size_t j = i + 1;
+                while (j < p.size()) {
+                    if (p[i].nome == p[j].nome) {
+                        p[i].quantidade += p[j].quantidade;
+                        if (p[i].valor <= 0 && p[j].quantidade != 0) {
+                            p[i].valor = p[j].valor;
+                        }
+                        p.erase(p.begin() + j);
+                    } else {
+                        ++j;
+                    }
+                }
+            }
+
+            
+            pComprados.clear(); // limpa "carrinho"
+            custo = 0;
+
+            if (!atualizarArquivo(p)) {
+                cout << "\n Obs.: Ocorreu um erro ao devolver os itens.\n";
+            }
+            return;
+        }
+        int vezes = 1;
+        float final = custo;
+        if (forma_pagamento == 2 || forma_pagamento == 3) {
+            vezes = campoNumero < int > ("Escolha o nº de vezes:\n[0] Cancelar operação\n---> ", 0, 12);
+            if (vezes == 0) return;
+            if (vezes > 3) final += final * 0.1;
+        }
+        if (vezes == 1) {
+            final -= final * 0.05;
+        }
+
+        cout << "\n\t===================\n";
+        for (size_t i = 0; i < pComprados.size(); i++) {
+            cout << "(" << pComprados[i].quantidade << "x) " << pComprados[i].nome << ": " << pComprados[i].valor << endl;
+        }
+        cout << " = R$ " << custo << endl;
+
+        cout << "\t=== Pagamentos ===\n";
+        if (vezes == 1)
+            cout << "Desconto aplicado: 5%\n";
+
+        if (vezes > 3)
+            cout << "Juros aplicado: 10%\n";
+
+        for (int i = 1; i <= vezes; i++) {
+          //Exibe a data em que as parcelas vencem
+          string mes = (forma_pagamento == 1) ? somaMes(0) : somaMes(i);
+            cout << mes << ": " << "R$: " << final / vezes << endl;
+        }
+        cout << "\n=== Valor total ===\n" << " R$: " << final << endl;
+
+        int escolha = campoNumero < int > ("[1] - Prosseguir\n[0] - Cancelar operação\n---> ", 0, 1);
+        if (escolha == 0) {
+            return;
+        }
+        pComprados.clear(); //Limpa o vetor de produtos comprados "carrinho"
     }
-    pComprados.clear();
-  }
 }
 
 int main() {
-  system("chcp 65001");
+    system("chcp 65001"); //Permite o uso de acentos
 
-  vector<Produto> produtos = lerProdutos(ARQUIVO);
-  vector<Produto> produtosComprados;
-  
-  int opcao;
-  t_valor valor;
+    vector <Produto> produtos = lerProdutos(ARQUIVO); //Recebe os produtos do arquivo
+    vector <Produto> produtosComprados;
 
-  do {
-    cout << endl << "\t===== Mercado =====" << endl << endl;
-    cout << "Opção 1: Cadastrar produtos" << endl;
-    cout << "Opção 2: Selecionar produtos para a venda" << endl;
-    cout << "Opção 3: Pagar produtos" << endl;
-    cout << "Opção 4: Fechar sistema" << endl << endl;
-    cout << "Selecione a opção que lhe convém:\n---> ";
-    cin >> opcao;
-    cin.ignore();
-    cout << endl;
+    int opcao;
+    t_valor valor;
 
-    switch (opcao) {
-    case 1:
-      cadastrarProduto(produtos);
-      break;
+    do {
+        cout << endl << "\t===== Mercado =====" << endl << endl;
+        cout << "Opção 1: Cadastrar produtos" << endl;
+        cout << "Opção 2: Selecionar produtos para a venda" << endl;
+        cout << "Opção 3: Pagar produtos" << endl;
+        cout << "Opção 4: Fechar sistema" << endl << endl;
+        cout << "Selecione a opção que lhe convém:\n---> ";
+        cin >> opcao;
+        cin.ignore();
+        cout << endl;
 
-    case 2:
-      venderProdutos(produtos, produtosComprados, valor);
-      break;
+        switch (opcao) {
+        case 1:
+            cadastrarProduto(produtos);
+            break;
 
-    case 3:
-      pagarProdutos(produtosComprados, valor);
-      break;
+        case 2:
+            venderProdutos(produtos, produtosComprados, valor);
+            break;
 
-    case 4:
-      cout << endl << "Programa encerrado." << endl;
-      break;
+        case 3:
+            pagarProdutos(produtosComprados, valor, produtos);
+            break;
 
-    default:
-      cout << endl << "Opção inválida." << endl;
-      break;
-    }
-  } while (opcao != 4);
-  return 0;
+        case 4:
+            cout << endl << "Programa encerrado." << endl;
+            break;
+
+        default:
+            cout << endl << "Opção inválida." << endl;
+            break;
+        }
+    } while (opcao != 4);
+
+    return 0;
 }
